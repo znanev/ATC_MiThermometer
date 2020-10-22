@@ -12,6 +12,9 @@ The web flasher does work for many devices that uses the Telink TLSR82** MCUs an
 
 ### You can support my work via PayPal: https://paypal.me/hoverboard1 this keeps projects like this coming.
 
+Tutorial in spanish: https://domoticaencasa.es/tutorial-custom-firmware-termohigrometro-xiaomi-lywsd03mmc
+Thanks to Eduardo Ruiz
+
 ## OTA
 ### How to flash the custom firmware:
 
@@ -39,8 +42,8 @@ The newly created .bin file can then simply be flashed by either the Web Flasher
 
 Because of the OTA dual bank update method a firmware can be maximum 256kB in size.
 
-The MCU used in the Thermometer is the TLSR8251 but the datasheet from the TLSR8258 can be used and found here:
-http://wiki.telink-semi.cn/doc/ds/DS_TLSR8258-E_Datasheet%20for%20Telink%20BLE+IEEE802.15.4%20Multi-Standard%20Wireless%20SoC%20TLSR8258.pdf
+The MCU used in the Thermometer is the TLSR8251 the datasheet can be found here:
+http://wiki.telink-semi.cn/doc/ds/DS_TLSR8251-E_Datasheet%20for%20Telink%20BLE+IEEE802.15.4%20Multi-Standard%20Wireless%20SoC%20TLSR8251.pdf
 
 ### Getting the MAC of your Thermometer:
 On boot the custom firmware will show the last three bytes of the MAC Address in the humidity display part on the LCD for 2 seconds each, the first three bytes are always the same so not shown.
@@ -51,7 +54,12 @@ The following settings can be send to the RxTx Characteristics 0x1F10/0x1f1f
 These settings will not get saved on power loss, maybe that will change in future but normaly the battery will be in there for a while
 
 ### Show battery level in LCD :
+
+Will show Humidity% or Battery% flipping back and forth every 5~6 seconds, with battery symbol at bottom indicated it's battery level
+
+
 The battery level will be shown on the LCD every 5-6secdonds indicated by the battery symbol at the humidity display.
+
 0xB1 = Enabled <- Default
 
 0xB0 = Disabled
@@ -90,6 +98,19 @@ byte1 as an int8_t
 so Temp = range -12,8 - + 12,8 °C offset
 Humi = range -50 - +50 % offset
 
+### Temp or Humi instant advertising
+
+When the temp or Humidity does change to fast between the main loop(5 seconds interval) the Advertising will be instant for that one.
+
+byte0 0xFC = temp_alarm_point // value divided by 10 for temp in °C
+
+byte0 0xFD = humi_alarm_point
+
+byte1 as int8_t 
+
+Temp alarm from 0,1°C to 25,5°C Range <- 0,5°C Default
+
+Humi alarm from 1% to 50% Range <- 5% Default
 
 ## Advertising format of the custom firmware:
 The custom firmware sends every minute an update of advertising data on the UUID 0x181A with the Tempereature, Humidity and Battery data.
@@ -109,6 +130,14 @@ Byte 15-16 Battery in mV uint16_t
 Byte 17 frame packet counter
 
 0x0e, 0x16, 0x1a, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xaa, 0xaa, 0xbb, 0xcc, 0xdd, 0xdd, 0x00
+
+
+## Using custom firmware with ESPHome
+The LYWSD03MMC sensors work directly with ESPHome XiaomiBLE - [xiaomi_lywsd03mmc component](https://esphome.io/components/sensor/xiaomi_ble.html#lywsd03mmc).
+
+Set "Mi like" advertising on custom firmware. The bindkey is not necessary any more as the payload is not encrypted in the custom firmware. However, since the bindkey is a mandatory parameter, you still need to give it a fake one in the config file. It can be anything though, as long as it is formatted like a real one.
+
+Details: https://github.com/esphome/feature-requests/issues/552#issuecomment-688049747
 
 ### Stock firmware:
 Inside this .zip can be found the stock firmware to go back
