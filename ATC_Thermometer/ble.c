@@ -9,7 +9,6 @@
 
 #include "ble.h"
 #include "cmd_parser.h"
-#include "lcd.h"
 
 RAM	uint8_t	ble_connected = 0;
 
@@ -54,7 +53,6 @@ void app_enter_ota_mode(void)
 {
 	ota_is_working = 1;
 	bls_ota_setTimeout(5 * 1000000);
-	show_smiley(1);
 }
 
 void app_switch_to_indirect_adv(uint8_t e, uint8_t *p, int n)
@@ -66,8 +64,6 @@ void app_switch_to_indirect_adv(uint8_t e, uint8_t *p, int n)
 void ble_disconnect_callback(uint8_t e,uint8_t *p, int n)
 {
 	ble_connected = 0;
-	show_ble_symbol(0);
-	update_lcd();
 }
 
 _attribute_ram_code_ void user_set_rf_power (uint8_t e, uint8_t *p, int n)
@@ -79,8 +75,6 @@ void ble_connect_callback(uint8_t e, uint8_t *p, int n)
 {
 	ble_connected = 1;
 	bls_l2cap_requestConnParamUpdate (8, 8, 99, 400);  //1S
-	show_ble_symbol(1);
-	update_lcd();
 }
 
 extern u32 blt_ota_start_tick;

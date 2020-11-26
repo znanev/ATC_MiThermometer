@@ -3,7 +3,9 @@
 #include "stack/ble/ble.h"
 #include "vendor/common/blt_common.h"
 
-#include "lcd.h"
+#include "epd.h"
+
+RAM extern XiaomiMiaoMiaoCeBT c;
 
 extern bool advertising_type;
 extern bool temp_C_or_F;
@@ -29,15 +31,15 @@ void cmd_parser(void * p){
 	}else if(inData == 0xA0){
 		blinking_smiley = false;
 		comfort_smiley = false;
-		show_smiley(0);//Smiley off
+		show_smiley(&c, 0);//Smiley off
 	}else if(inData == 0xA1){
 		blinking_smiley = false;
 		comfort_smiley = false;
-		show_smiley(1);//Smiley happy
+		show_smiley(&c, 1);//Smiley happy
 	}else if(inData == 0xA2){ 
 		blinking_smiley = false;
 		comfort_smiley = false;
-		show_smiley(2);//Smiley sad
+		show_smiley(&c, 2);//Smiley sad
 	}else if(inData == 0xA3){
 		blinking_smiley = false;
 		comfort_smiley = true; // Comfort Indicator
