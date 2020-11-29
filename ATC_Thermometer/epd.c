@@ -38,9 +38,9 @@ uint8_t fixed_deg_F[2] = {16, 6};
 uint8_t minus[2] = {14, 0};
 uint8_t Atc[48] = {16, 7, 15, 4, 14, 1, 14, 7, 12, 4, 13, 3, 15, 7, 15, 6, 15, 5, 14, 0, 13, 5, 13, 4, 14, 5, 14, 4, 15, 3, 15, 2, 14, 3, 13, 1, 11, 5, 11, 2, 12, 6, 12, 0, 13, 6, 13, 2};
 
-// These values closely match times captured with logic analyser
-uint8_t delay_SPI_clock_pulse = 8;
-uint8_t delay_SPI_end_cycle = 12;
+// These values closely reproduce times captured with logic analyser
+uint8_t delay_SPI_clock_pulse = 4;
+uint8_t delay_SPI_end_cycle = 8;
 
 /*
 
@@ -104,44 +104,43 @@ uint8_t digitalRead(uint16_t pin)
     return gpio_read(pin);
 }
 
-
 // Replace lcd functions
 void show_atc_mac(XiaomiMiaoMiaoCeBT* c)
 {
 	extern u8 mac_public[6];
-        epd_start_new_screen(c);
-        epd_set_shape(c, ATC);
-        epd_set_digit(c, mac_public[2] & 0x0f, BOTTOM_RIGHT);
-        epd_set_digit(c, mac_public[2] >> 4, BOTTOM_LEFT);
-        epd_write_display(c);
+    epd_start_new_screen(c);
+    epd_set_shape(c, ATC);
+    epd_set_digit(c, mac_public[2] & 0x0f, BOTTOM_RIGHT);
+    epd_set_digit(c, mac_public[2] >> 4, BOTTOM_LEFT);
+    epd_write_display(c);
 	sleep_ms(1800);
-        epd_start_new_screen(c);
-        epd_set_shape(c, ATC);
-        epd_write_display(c);
+    epd_start_new_screen(c);
+    epd_set_shape(c, ATC);
+    epd_write_display(c);
 	sleep_ms(200);
-        epd_set_digit(c, mac_public[1] & 0x0f, BOTTOM_RIGHT);
-        epd_set_digit(c, mac_public[1] >> 4, BOTTOM_LEFT);
-        epd_write_display(c);
+    epd_set_digit(c, mac_public[1] & 0x0f, BOTTOM_RIGHT);
+    epd_set_digit(c, mac_public[1] >> 4, BOTTOM_LEFT);
+    epd_write_display(c);
 	sleep_ms(1800);
-        epd_start_new_screen(c);
-        epd_set_shape(c, ATC);
-        epd_write_display(c);
+    epd_start_new_screen(c);
+    epd_set_shape(c, ATC);
+    epd_write_display(c);
 	sleep_ms(200);
-        epd_set_digit(c, mac_public[0] & 0x0f, BOTTOM_RIGHT);
-        epd_set_digit(c, mac_public[0] >> 4, BOTTOM_LEFT);
-        epd_write_display(c);
+    epd_set_digit(c, mac_public[0] & 0x0f, BOTTOM_RIGHT);
+    epd_set_digit(c, mac_public[0] >> 4, BOTTOM_LEFT);
+    epd_write_display(c);
 	sleep_ms(1800);
 }
 
 void show_temp_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t symbol){/*1 = C, 2 = F*/
 	if (symbol == 1) {
-            epd_unset_shape(c, FIXED_DEG_F);
-            epd_set_shape(c, FIXED_DEG_C);
-        }
+        epd_unset_shape(c, FIXED_DEG_F);
+        epd_set_shape(c, FIXED_DEG_C);
+    }
 	else if (symbol == 2) {
-            epd_unset_shape(c, FIXED_DEG_C);
-            epd_set_shape(c, FIXED_DEG_F);
-        }
+        epd_unset_shape(c, FIXED_DEG_C);
+        epd_set_shape(c, FIXED_DEG_F);
+    }
 }
 
 void show_big_number(XiaomiMiaoMiaoCeBT* c, int16_t number)
@@ -223,11 +222,25 @@ void show_smiley(XiaomiMiaoMiaoCeBT* c, uint8_t state){/*0=off, 1=happy, 2=sad*/
         }
 }
 
-
-//TODO: try configuring pullups / pulldowns on IO pins in order to recover after deep sleepc
 void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
 {
     // set the pin modes (note: no hardware SPI is used)
+
+    // set pull-up resistors on output pins
+    gpio_setup_up_down_resistor(SPI_ENABLE, PM_PIN_PULLUP_10K);
+    gpio_setup_up_down_resistor(SPI_MOSI, PM_PIN_PULLUP_10K);
+    gpio_setup_up_down_resistor(IO_RST_N, PM_PIN_PULLUP_10K);
+    gpio_setup_up_down_resistor(SPI_CLOCK, PM_PIN_PULLUP_10K);
+    gpio_setup_up_down_resistor(EPD_TO_PC4, PM_PIN_PULLUP_10K);
+
+    // set all outputs to 1
+    digitalWrite(SPI_ENABLE, HIGH); 
+    digitalWrite(SPI_MOSI, HIGH);
+    digitalWrite(IO_RST_N, HIGH); 
+    digitalWrite(SPI_CLOCK, HIGH);
+    digitalWrite(EPD_TO_PC4, HIGH);
+
+    // enable GPIO
     pinMode(SPI_ENABLE, OUTPUT);
     pinMode(SPI_MOSI, OUTPUT);
     pinMode(SPI_CLOCK, OUTPUT);
@@ -235,45 +248,40 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
     pinMode(EPD_TO_PC4, OUTPUT);
     pinMode(IO_BUSY_N, INPUT);
 
-    gpio_setup_up_down_resistor(IO_RST_N, PM_PIN_PULLUP_10K);
-    gpio_setup_up_down_resistor(EPD_TO_PC4, PM_PIN_PULLUP_10K);
-
-    // set weak driving strength
-    gpio_set_data_strength(IO_RST_N, 0);
-    gpio_set_data_strength(EPD_TO_PC4, 0);
-
-    // set all outputs to 0
-    digitalWrite(SPI_ENABLE, LOW); 
     digitalWrite(SPI_MOSI, LOW);
-    digitalWrite(IO_RST_N, LOW); 
     digitalWrite(SPI_CLOCK, LOW);
-    digitalWrite(EPD_TO_PC4, LOW); 
-
-    // disable SPI (SPI enable is low active)
-    digitalWrite(SPI_ENABLE, HIGH);
-
-    // Set pin 8 (connected to MCU pin 17 - PC4) to high (after a short pulse to low)
-    digitalWrite(EPD_TO_PC4, HIGH);
-    sleep_ms(10);
-    digitalWrite(EPD_TO_PC4, LOW);
-    sleep_ms(80);
-    digitalWrite(EPD_TO_PC4, HIGH);
-    // after some sleep_ms set RST_N to 1
-    sleep_us(110);
-    digitalWrite(IO_RST_N, HIGH);
 
     if(redraw)
     {
+        // pulse RST_N low for 110 microseconds
+        digitalWrite(IO_RST_N, LOW);
+        sleep_us(110);
+        digitalWrite(IO_RST_N, HIGH);
+        sleep_us(145);
+
         // start an initialisation sequence (black - all 0xFF)
         send_sequence(c, T_LUTV_init, T_LUT_KK_init, T_LUT_KW_init, T_DTM_init, 1);
+
         // Original firmware pauses here for about 1500 ms
         // in addition to display refresh busy signal
         // Might be necessary in order to fully energise the black particles,
         // but even without this sleep_ms the display seems to be working fine
         sleep_ms(2000);
 
+        // pulse RST_N low for 110 microseconds
+        digitalWrite(IO_RST_N, LOW);
+        sleep_us(110);
+        digitalWrite(IO_RST_N, HIGH);
+        sleep_us(145);
         // start an initialisation sequence (white - all 0x00)
         send_sequence(c, T_LUTV_init, T_LUT_KW_update, T_LUT_KK_update, T_DTM2_init, 1);
+
+        // pulse RST_N low for 110 microseconds
+        digitalWrite(IO_RST_N, LOW);
+        sleep_us(110);
+        digitalWrite(IO_RST_N, HIGH);
+        sleep_us(145);
+
         // Original firmware pauses here for about 100 ms
         // in addition to display refresh busy signal.
         // Might be dedicated to sensor data aquisition
@@ -291,14 +299,14 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
                                      uint8_t *dataKW, uint8_t *data,
                                      uint8_t is_init)
 {
-    if(is_init || c->transition)
+/*    if(is_init || c->transition)
     {
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
         sleep_us(110);
         digitalWrite(IO_RST_N, HIGH);
     }
-
+*/
     // send Charge Pump ON command
     transmit(0, POWER_ON);
 
@@ -442,7 +450,7 @@ void transmit(uint8_t cd, uint8_t data_to_send)
         digitalWrite(SPI_MOSI, HIGH);
     else
         digitalWrite(SPI_MOSI, LOW);
-    sleep_us(delay_SPI_clock_pulse);
+    sleep_us(delay_SPI_clock_pulse * 2 + 1);
     digitalWrite(SPI_CLOCK, HIGH);
     sleep_us(delay_SPI_clock_pulse);
 
@@ -458,7 +466,7 @@ void transmit(uint8_t cd, uint8_t data_to_send)
             digitalWrite(SPI_MOSI, LOW);
         // prepare for the next bit
         data_to_send = (data_to_send << 1);
-        sleep_us(delay_SPI_clock_pulse);
+        sleep_us(delay_SPI_clock_pulse * 2 + 1);
         // the data is read at rising clock (halfway the time MOSI is set)
         digitalWrite(SPI_CLOCK, HIGH);
         sleep_us(delay_SPI_clock_pulse);
@@ -466,7 +474,7 @@ void transmit(uint8_t cd, uint8_t data_to_send)
 
     // finish by ending the clock cycle and disabling SPI
     digitalWrite(SPI_CLOCK, LOW);
-    sleep_us(delay_SPI_end_cycle);
+    sleep_us(delay_SPI_end_cycle * 2 + 1);
     digitalWrite(SPI_ENABLE, HIGH);
     sleep_us(delay_SPI_end_cycle);
 }
@@ -475,9 +483,6 @@ void epd_write_display(XiaomiMiaoMiaoCeBT* c)
 {
     // Send update waveforms
     send_sequence(c, T_LUTV_init, T_LUT_KK_update, T_LUT_KW_update, c->display_data, 0);
-
-// Disable charge pump
-//    digitalWrite(EPD_TO_PC4, LOW);
 }
 
 void epd_write_display_data(XiaomiMiaoMiaoCeBT* c, uint8_t *data)

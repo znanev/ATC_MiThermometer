@@ -21,6 +21,7 @@ RAM uint16_t last_humi;
 RAM uint8_t battery_level;
 RAM uint16_t battery_mv;
 RAM bool show_batt_or_humi;
+RAM uint8_t disp_update_count;
 
 //Settings
 RAM bool temp_C_or_F;
@@ -61,7 +62,7 @@ void user_init_normal(void){//this will get executed one time after power up
 	random_generator_init();  //must
 	init_ble();	
 	init_sensor();
-        epd_init(&c, 1);
+    epd_init(&c, 1);
 	init_flash();
 	show_atc_mac(&c);
 	battery_mv = get_battery_mv();
@@ -69,16 +70,16 @@ void user_init_normal(void){//this will get executed one time after power up
 }
 
 _attribute_ram_code_ void user_init_deepRetn(void){//after sleep this will get executed
+	// re-initialise display peripherals only!
+	epd_init(&c, 0);
+
 	blc_ll_initBasicMCU();
 	rf_set_power_level_index (RF_POWER_P3p01dBm);
 	blc_ll_recoverDeepRetention();
-
-        // re-initialise display peripherals only!
-        epd_init(&c, 0);
 }
 
 void main_loop(){	
-	if((clock_time()-last_delay) > 12000*CLOCK_SYS_CLOCK_1MS){//main loop delay
+	if((clock_time()-last_delay) > 5000*CLOCK_SYS_CLOCK_1MS){//main loop delay
 	
 		if((clock_time()-last_battery_delay) > 5*60000*CLOCK_SYS_CLOCK_1MS){//Read battery delay
 			battery_mv = get_battery_mv();
@@ -95,15 +96,27 @@ void main_loop(){
 			if((temp-last_temp > temp_alarm_point)||(last_temp-temp > temp_alarm_point)||(humi-last_humi > humi_alarm_point)||(last_humi-humi > humi_alarm_point)){// instant advertise on to much sensor difference
 				set_adv_data(temp, humi, battery_level, battery_mv);
 			}
+
+			// only count "major" updates of the display, i.e. digits
+			if (last_temp != temp || last_humi != humi) 
+			{
+				disp_update_count++;
+			}
+
 			last_temp = temp;
 			last_humi = humi;
 		}	
 		meas_count++;
 
-                if(meas_count % 32 == 0)
-                    epd_init(&c, 1);
+		// Original firmware re-initialises the display
+		// after 32 partial updates
+		if(disp_update_count >= 32)
+		{
+			disp_update_count = 0;
+			epd_init(&c, 1);
+		}
 
-                epd_start_new_screen(&c);
+		epd_start_new_screen(&c);
 		
 		if(temp_C_or_F){
 			show_temp_symbol(&c, 2);
@@ -116,8 +129,8 @@ void main_loop(){
 		if(!show_batt_enabled) show_batt_or_humi = true;
 		
 		if(show_batt_or_humi){//Change between Humidity displaying and battery level if show_batt_enabled=true
-                        show_small_number(&c, last_humi);	
-                        show_battery_symbol(&c, 0);   
+			show_small_number(&c, last_humi);
+			show_battery_symbol(&c, 0);
 		}else{
 			show_small_number(&c, (battery_level==100)?99:battery_level);
 			show_battery_symbol(&c, 1);
@@ -130,11 +143,11 @@ void main_loop(){
 			ble_send_humi(last_humi);
 			ble_send_battery(battery_level);
 
-                	show_ble_symbol(&c, 1);
+            show_ble_symbol(&c, 1);
 		}
-                else {
-                   	show_ble_symbol(&c, 0);
-                }
+        else {
+			show_ble_symbol(&c, 0);
+        }
 
 		if((clock_time() - last_adv_delay) > (advertising_type?5000:10000)*CLOCK_SYS_CLOCK_1MS){//Advetise data delay
 		    if(adv_count >= advertising_interval){
@@ -158,7 +171,8 @@ void main_loop(){
 		show_smiley(&c, last_smiley);
 		}
 		
-                epd_write_display(&c);
+        epd_write_display(&c);
+
 		last_delay = clock_time();
 	}
 	blt_sdk_main_loop();
