@@ -27,16 +27,18 @@ jobs:
           cd $GITHUB_WORKSPACE
           ls -la
       - name: Create GitHub release
+        if: github.event == 'push'
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.run_number }}
-          release_name: Release ${{ github.run_number }}
+          tag_name: 0.${{ github.run_number }}.0
+          release_name: Release 0.${{ github.run_number }}.0
           draft: false
           prerelease: true
       - name: upload ATC_Thermometer.bin to releases
+        if: github.event == 'push'
         id: upload-atc-thermometer-binary
         uses: actions/upload-release-asset@v1
         env:
