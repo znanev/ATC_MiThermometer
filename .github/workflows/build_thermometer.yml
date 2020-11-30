@@ -27,7 +27,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           ls -la
       - name: Create GitHub release
-        if: github.event == 'push'
+        if: github.event == 'push' || github.event.pull_request.merged == true
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -38,7 +38,7 @@ jobs:
           draft: false
           prerelease: true
       - name: upload ATC_Thermometer.bin to releases
-        if: github.event == 'push'
+        if: github.event == 'push' || github.event.pull_request.merged == true
         id: upload-atc-thermometer-binary
         uses: actions/upload-release-asset@v1
         env:
