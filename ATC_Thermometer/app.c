@@ -79,7 +79,8 @@ _attribute_ram_code_ void user_init_deepRetn(void){//after sleep this will get e
 }
 
 void main_loop(){	
-	if((clock_time()-last_delay) > 5000*CLOCK_SYS_CLOCK_1MS){//main loop delay
+	// Do NOT update display while uploading firmware via OTA
+	if( !ble_get_ota() && ((clock_time()-last_delay) > 5000*CLOCK_SYS_CLOCK_1MS) ){//main loop delay
 	
 		if((clock_time()-last_battery_delay) > 5*60000*CLOCK_SYS_CLOCK_1MS){//Read battery delay
 			battery_mv = get_battery_mv();

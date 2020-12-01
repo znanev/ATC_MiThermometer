@@ -1,6 +1,8 @@
 #include "epd.h"
 #include "tl_common.h"
+#include "drivers/8258/pm.h"
 #include "drivers/8258/timer.h"
+#include "app_config.h"
 
 uint8_t T_DTM_init[18] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 uint8_t T_DTM2_init[18] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -113,23 +115,23 @@ void show_atc_mac(XiaomiMiaoMiaoCeBT* c)
     epd_set_digit(c, mac_public[2] & 0x0f, BOTTOM_RIGHT);
     epd_set_digit(c, mac_public[2] >> 4, BOTTOM_LEFT);
     epd_write_display(c);
-	sleep_ms(1800);
+    cpu_stall_wakeup_by_timer0(1800 * CLOCK_SYS_CLOCK_1MS);
     epd_start_new_screen(c);
     epd_set_shape(c, ATC);
     epd_write_display(c);
-	sleep_ms(200);
+    cpu_stall_wakeup_by_timer0(200 * CLOCK_SYS_CLOCK_1MS);
     epd_set_digit(c, mac_public[1] & 0x0f, BOTTOM_RIGHT);
     epd_set_digit(c, mac_public[1] >> 4, BOTTOM_LEFT);
     epd_write_display(c);
-	sleep_ms(1800);
+    cpu_stall_wakeup_by_timer0(1800 * CLOCK_SYS_CLOCK_1MS);
     epd_start_new_screen(c);
     epd_set_shape(c, ATC);
     epd_write_display(c);
-	sleep_ms(200);
+    cpu_stall_wakeup_by_timer0(200 * CLOCK_SYS_CLOCK_1MS);
     epd_set_digit(c, mac_public[0] & 0x0f, BOTTOM_RIGHT);
     epd_set_digit(c, mac_public[0] >> 4, BOTTOM_LEFT);
     epd_write_display(c);
-	sleep_ms(1800);
+    cpu_stall_wakeup_by_timer0(1800 * CLOCK_SYS_CLOCK_1MS);
 }
 
 void show_temp_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t symbol){/*1 = C, 2 = F*/
@@ -176,13 +178,6 @@ void show_small_number(XiaomiMiaoMiaoCeBT* c, uint16_t number)
 
 void show_battery_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t state)
 {
-/*
-	if(state)
-		display_buff[1] |= 0x08;
-	else 
-		display_buff[1] &= ~0x08;
-*/
-    // TODO: Make possible "deleting" symbols!
     if (state)
         epd_set_shape(c, BATTERY_LOW);
     else
@@ -191,13 +186,6 @@ void show_battery_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t state)
 
 void show_ble_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t state)
 {
-/*
-    if(state)
-            display_buff[2] |= 0x10;
-    else 
-            display_buff[2] &= ~0x10;
-*/
-    // TODO: Make possible "deleting symbols!
     if(state)
         epd_set_shape(c, SUN);
     else
@@ -205,11 +193,6 @@ void show_ble_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t state)
 }
 
 void show_smiley(XiaomiMiaoMiaoCeBT* c, uint8_t state){/*0=off, 1=happy, 2=sad*/
-/*
-	display_buff[2] &= ~0x07;
-	if(state==1)display_buff[2]|=0x05;
-	else if(state==2)display_buff[2]|=0x06;
-*/
         epd_unset_shape(c, FACE_FROWN);
         epd_unset_shape(c, FACE_SMILE);
         if (state == 1) {
@@ -255,9 +238,9 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
     {
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
-        sleep_us(110);
+        cpu_stall_wakeup_by_timer0(110 * CLOCK_SYS_CLOCK_1US);
         digitalWrite(IO_RST_N, HIGH);
-        sleep_us(145);
+        cpu_stall_wakeup_by_timer0(145 * CLOCK_SYS_CLOCK_1US);
 
         // start an initialisation sequence (black - all 0xFF)
         send_sequence(c, T_LUTV_init, T_LUT_KK_init, T_LUT_KW_init, T_DTM_init, 1);
@@ -266,21 +249,22 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
         // in addition to display refresh busy signal
         // Might be necessary in order to fully energise the black particles,
         // but even without this sleep_ms the display seems to be working fine
-        sleep_ms(2000);
+        cpu_stall_wakeup_by_timer0(2000 * CLOCK_SYS_CLOCK_1MS);
 
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
-        sleep_us(110);
+        cpu_stall_wakeup_by_timer0(110 * CLOCK_SYS_CLOCK_1US);
         digitalWrite(IO_RST_N, HIGH);
-        sleep_us(145);
+        cpu_stall_wakeup_by_timer0(145 * CLOCK_SYS_CLOCK_1US);
+
         // start an initialisation sequence (white - all 0x00)
         send_sequence(c, T_LUTV_init, T_LUT_KW_update, T_LUT_KK_update, T_DTM2_init, 1);
 
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
-        sleep_us(110);
+        cpu_stall_wakeup_by_timer0(110 * CLOCK_SYS_CLOCK_1US);
         digitalWrite(IO_RST_N, HIGH);
-        sleep_us(145);
+        cpu_stall_wakeup_by_timer0(145 * CLOCK_SYS_CLOCK_1US);
 
         // Original firmware pauses here for about 100 ms
         // in addition to display refresh busy signal.
@@ -313,7 +297,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // wait for the display to become ready to receive new
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
-        sleep_ms(1);
+        cpu_stall_wakeup_by_timer0(CLOCK_SYS_CLOCK_1MS);
 
     // Original firmware pauses here for about 100ms - this time is not required by the display,
     // but is probably dedicated to sensor data aquisition (temperature, humidity and battery).
@@ -395,7 +379,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
         transmit(1, data[i]);
 
     while (digitalRead(IO_BUSY_N) == 0)
-        sleep_ms(1);
+        cpu_stall_wakeup_by_timer0(CLOCK_SYS_CLOCK_1MS);
 
     // Original firmware sends DATA_START_TRANSMISSION_2 command only
     // when performing full refresh
@@ -406,7 +390,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
             transmit(1, data[i]);
 
         while (digitalRead(IO_BUSY_N) == 0)
-            sleep_ms(1);
+            cpu_stall_wakeup_by_timer0(CLOCK_SYS_CLOCK_1MS);
     }
     
     if (c->transition)
@@ -426,7 +410,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // wait for the display to become ready to receive new
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
-        sleep_ms(1);
+        cpu_stall_wakeup_by_timer0(CLOCK_SYS_CLOCK_1MS);
 
     // send Charge Pump OFF command
     transmit(0, POWER_OFF);
@@ -435,14 +419,14 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // wait for the display to become ready to receive new
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
-        sleep_ms(1);
+        cpu_stall_wakeup_by_timer0(CLOCK_SYS_CLOCK_1MS);
 }
 
 void transmit(uint8_t cd, uint8_t data_to_send)
 {
     // enable SPI
     digitalWrite(SPI_ENABLE, LOW);
-    sleep_us(delay_SPI_clock_pulse);
+    cpu_stall_wakeup_by_timer0(delay_SPI_clock_pulse * CLOCK_SYS_CLOCK_1US);
 
     // send the first bit, this indicates if the following is a command or data
     digitalWrite(SPI_CLOCK, LOW);
@@ -450,9 +434,9 @@ void transmit(uint8_t cd, uint8_t data_to_send)
         digitalWrite(SPI_MOSI, HIGH);
     else
         digitalWrite(SPI_MOSI, LOW);
-    sleep_us(delay_SPI_clock_pulse * 2 + 1);
+    cpu_stall_wakeup_by_timer0((delay_SPI_clock_pulse * 2 + 1) * CLOCK_SYS_CLOCK_1US);
     digitalWrite(SPI_CLOCK, HIGH);
-    sleep_us(delay_SPI_clock_pulse);
+    cpu_stall_wakeup_by_timer0(delay_SPI_clock_pulse * CLOCK_SYS_CLOCK_1US);
 
     // send 8 bytes
     for (int i = 0; i < 8; i++)
@@ -466,17 +450,17 @@ void transmit(uint8_t cd, uint8_t data_to_send)
             digitalWrite(SPI_MOSI, LOW);
         // prepare for the next bit
         data_to_send = (data_to_send << 1);
-        sleep_us(delay_SPI_clock_pulse * 2 + 1);
+        cpu_stall_wakeup_by_timer0((delay_SPI_clock_pulse * 2 + 1) * CLOCK_SYS_CLOCK_1US);
         // the data is read at rising clock (halfway the time MOSI is set)
         digitalWrite(SPI_CLOCK, HIGH);
-        sleep_us(delay_SPI_clock_pulse);
+        cpu_stall_wakeup_by_timer0(delay_SPI_clock_pulse * CLOCK_SYS_CLOCK_1US);
     }
 
     // finish by ending the clock cycle and disabling SPI
     digitalWrite(SPI_CLOCK, LOW);
-    sleep_us(delay_SPI_end_cycle * 2 + 1);
+    cpu_stall_wakeup_by_timer0((delay_SPI_clock_pulse * 2 + 1) * CLOCK_SYS_CLOCK_1US);
     digitalWrite(SPI_ENABLE, HIGH);
-    sleep_us(delay_SPI_end_cycle);
+    cpu_stall_wakeup_by_timer0(delay_SPI_clock_pulse * CLOCK_SYS_CLOCK_1US);
 }
 
 void epd_write_display(XiaomiMiaoMiaoCeBT* c)

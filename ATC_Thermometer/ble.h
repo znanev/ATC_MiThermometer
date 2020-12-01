@@ -6,6 +6,7 @@
 void init_ble();
 void set_adv_data(int16_t temp, uint16_t humi, uint8_t battery_level, uint16_t battery_mv);
 bool ble_get_connected();
+bool ble_get_ota();
 void ble_send_temp(uint16_t temp);
 void ble_send_humi(uint16_t humi);
 void ble_send_battery(uint8_t value);

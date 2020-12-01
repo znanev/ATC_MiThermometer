@@ -14,15 +14,15 @@ const uint8_t sens_reset[] = {0x80,0x5D};
 
 void init_sensor(){	
 	send_i2c(0xE0,sens_wakeup, sizeof(sens_wakeup));
-	sleep_us(240);
+	cpu_stall_wakeup_by_timer0(240*CLOCK_SYS_CLOCK_1US);
 	send_i2c(0xE0,sens_reset, sizeof(sens_reset));
-	sleep_us(240);
+	cpu_stall_wakeup_by_timer0(240*CLOCK_SYS_CLOCK_1US);
 	send_i2c(0xE0,sens_sleep, sizeof(sens_sleep));
 }
 
 void read_sensor(int16_t *temp, uint16_t *humi){
 	send_i2c(0xE0,sens_wakeup, sizeof(sens_wakeup));	
-	sleep_us(240);
+	cpu_stall_wakeup_by_timer0(240*CLOCK_SYS_CLOCK_1US);
 	uint8_t read_buff[5];
 	i2c_set_id(0xE0);
 	i2c_read_series(0x7CA2, 2, (uint8_t*)read_buff,  5);

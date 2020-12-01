@@ -47,7 +47,7 @@ RAM uint8_t	advertising_data[] = {
 
 uint8_t mac_public[6];
 	
-uint8_t ota_is_working = 0;
+RAM uint8_t ota_is_working = 0;
 
 void app_enter_ota_mode(void)
 {
@@ -166,6 +166,10 @@ void init_ble(){
 
 bool ble_get_connected(){
 	return ble_connected;
+}
+
+bool ble_get_ota(){
+	return ota_is_working;
 }
 
 extern bool advertising_type;//Custom or Mi Advertising
