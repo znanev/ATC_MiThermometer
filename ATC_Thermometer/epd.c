@@ -458,9 +458,9 @@ void transmit(uint8_t cd, uint8_t data_to_send)
 
     // finish by ending the clock cycle and disabling SPI
     digitalWrite(SPI_CLOCK, LOW);
-    cpu_stall_wakeup_by_timer0((delay_SPI_clock_pulse * 2 + 1) * CLOCK_SYS_CLOCK_1US);
+    cpu_stall_wakeup_by_timer0(delay_SPI_end_cycle * CLOCK_SYS_CLOCK_1US);
     digitalWrite(SPI_ENABLE, HIGH);
-    cpu_stall_wakeup_by_timer0(delay_SPI_clock_pulse * CLOCK_SYS_CLOCK_1US);
+    cpu_stall_wakeup_by_timer0(delay_SPI_end_cycle * CLOCK_SYS_CLOCK_1US);
 }
 
 void epd_write_display(XiaomiMiaoMiaoCeBT* c)
