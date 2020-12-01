@@ -1,8 +1,6 @@
 name: Build ATC_Thermometer
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -26,25 +24,3 @@ jobs:
           make
           cd $GITHUB_WORKSPACE
           ls -la
-      - name: Create GitHub release
-        if: github.event == 'push' || github.event.pull_request.merged == true
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: 0.${{ github.run_number }}.0
-          release_name: Release 0.${{ github.run_number }}.0
-          draft: false
-          prerelease: true
-      - name: upload ATC_Thermometer.bin to releases
-        if: github.event == 'push' || github.event.pull_request.merged == true
-        id: upload-atc-thermometer-binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ATC_Thermometer.bin
-          asset_name: ATC_Thermometer.bin
-          asset_content_type: application/octet-stream
