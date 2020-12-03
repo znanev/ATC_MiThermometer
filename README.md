@@ -1,3 +1,10 @@
+# NOTE
+*This fork is my effort to port **atc1441**'s custom [ATC_MiThermometer](https://github.com/atc1441/ATC_MiThermometer) firmware to work with the EPD display of MHO-C401.*
+
+*Please note that the EPD driver code is in early beta state and bugs and issues are quite likely to occur. Therefore I do not recommend that you flash it via OTA to your MHO-C401 device, if you don't have the means an/or skills to flash via USB-to-serial adapter should anything goes wrong.*
+
+*Following is the original README.md file - most of the information in it, regarding the CPU, SDK, BLE commands etc. is broadly the same for both devices, so while reading it, you can assume that what is described for LYWSD03MMC it will work (almost) the same for MHO-C401.*
+
 # ATC_MiThermometer
 Custom firmware for the Xiaomi Thermometer LYWSD03MMC and Telink Flasher via USB to Serial converter
 
