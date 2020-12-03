@@ -3,6 +3,8 @@ name: Build and Release ATC_Thermometer
 on:
   push:
     branches: [ master ]
+    paths:
+      - ATC_Thermometer/**
 
 jobs:
   build:
