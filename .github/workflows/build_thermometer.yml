@@ -3,6 +3,8 @@ name: Build ATC_Thermometer
 on:
   pull_request:
     branches: [ master ]
+    paths:
+      - ATC_Thermometer/**
 
 jobs:
   build:
