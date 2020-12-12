@@ -106,14 +106,14 @@ uint8_t digitalRead(uint16_t pin)
     return gpio_read(pin);
 }
 
-void deepSleep_ms(uint16_t milliseconds)
+_attribute_ram_code_ void pm_wait_ms(uint16_t milliseconds)
 {
-    cpu_sleep_wakeup(DEEPSLEEP_MODE_RET_SRAM_LOW32K, PM_WAKEUP_TIMER, clock_time() + milliseconds * CLOCK_SYS_CLOCK_1MS);
+    cpu_stall_wakeup_by_timer0(milliseconds * CLOCK_SYS_CLOCK_1MS);
 }
 
-void deepSleep_us(uint16_t microseconds)
+_attribute_ram_code_ void pm_wait_us(uint16_t microseconds)
 {
-    cpu_sleep_wakeup(DEEPSLEEP_MODE_RET_SRAM_LOW32K, PM_WAKEUP_TIMER, clock_time() + microseconds * CLOCK_SYS_CLOCK_1US);
+    cpu_stall_wakeup_by_timer0(microseconds * CLOCK_SYS_CLOCK_1US);
 }
 
 // Replace lcd functions
@@ -125,23 +125,23 @@ void show_atc_mac(XiaomiMiaoMiaoCeBT* c)
     epd_set_digit(c, mac_public[2] & 0x0f, BOTTOM_RIGHT);
     epd_set_digit(c, mac_public[2] >> 4, BOTTOM_LEFT);
     epd_write_display(c);
-    deepSleep_ms(1800);
+    pm_wait_ms(1800);
     epd_start_new_screen(c);
     epd_set_shape(c, ATC);
     epd_write_display(c);
-    deepSleep_ms(200);
+    pm_wait_ms(200);
     epd_set_digit(c, mac_public[1] & 0x0f, BOTTOM_RIGHT);
     epd_set_digit(c, mac_public[1] >> 4, BOTTOM_LEFT);
     epd_write_display(c);
-    deepSleep_ms(1800);
+    pm_wait_ms(1800);
     epd_start_new_screen(c);
     epd_set_shape(c, ATC);
     epd_write_display(c);
-    deepSleep_ms(200);
+    pm_wait_ms(200);
     epd_set_digit(c, mac_public[0] & 0x0f, BOTTOM_RIGHT);
     epd_set_digit(c, mac_public[0] >> 4, BOTTOM_LEFT);
     epd_write_display(c);
-    deepSleep_ms(1800);
+    pm_wait_ms(1800);
 }
 
 void show_temp_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t symbol){/*1 = C, 2 = F*/
@@ -248,9 +248,9 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
     {
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
-        deepSleep_us(110);
+        pm_wait_us(110);
         digitalWrite(IO_RST_N, HIGH);
-        deepSleep_us(145);
+        pm_wait_us(145);
 
         // start an initialisation sequence (black - all 0xFF)
         send_sequence(c, T_LUTV_init, T_LUT_KK_init, T_LUT_KW_init, T_DTM_init, 1);
@@ -259,22 +259,22 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
         // in addition to display refresh busy signal
         // Might be necessary in order to fully energise the black particles,
         // but even without this sleep_ms the display seems to be working fine
-        deepSleep_ms(2000);
+        pm_wait_ms(2000);
 
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
-        deepSleep_us(110);
+        pm_wait_us(110);
         digitalWrite(IO_RST_N, HIGH);
-        deepSleep_us(145);
+        pm_wait_us(145);
 
         // start an initialisation sequence (white - all 0x00)
         send_sequence(c, T_LUTV_init, T_LUT_KW_update, T_LUT_KK_update, T_DTM2_init, 1);
 
         // pulse RST_N low for 110 microseconds
         digitalWrite(IO_RST_N, LOW);
-        deepSleep_us(110);
+        pm_wait_us(110);
         digitalWrite(IO_RST_N, HIGH);
-        deepSleep_us(145);
+        pm_wait_us(145);
 
         // Original firmware pauses here for about 100 ms
         // in addition to display refresh busy signal.
@@ -307,7 +307,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // wait for the display to become ready to receive new
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
-        deepSleep_ms(1);
+        pm_wait_ms(1);
 
     // Original firmware pauses here for about 100ms - this time is not required by the display,
     // but is probably dedicated to sensor data aquisition (temperature, humidity and battery).
@@ -389,7 +389,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
         transmit(1, data[i]);
 
     while (digitalRead(IO_BUSY_N) == 0)
-        deepSleep_ms(1);
+        pm_wait_ms(1);
 
     // Original firmware sends DATA_START_TRANSMISSION_2 command only
     // when performing full refresh
@@ -400,7 +400,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
             transmit(1, data[i]);
 
         while (digitalRead(IO_BUSY_N) == 0)
-            deepSleep_ms(1);
+            pm_wait_ms(1);
     }
     
     if (c->transition)
@@ -420,7 +420,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // wait for the display to become ready to receive new
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
-        deepSleep_ms(1);
+        pm_wait_ms(1);
 
     // send Charge Pump OFF command
     transmit(0, POWER_OFF);
@@ -429,14 +429,14 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // wait for the display to become ready to receive new
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
-        deepSleep_ms(1);
+        pm_wait_ms(1);
 }
 
 void transmit(uint8_t cd, uint8_t data_to_send)
 {
     // enable SPI
     digitalWrite(SPI_ENABLE, LOW);
-    deepSleep_us(delay_SPI_clock_pulse);
+    pm_wait_us(delay_SPI_clock_pulse);
 
     // send the first bit, this indicates if the following is a command or data
     digitalWrite(SPI_CLOCK, LOW);
@@ -444,9 +444,9 @@ void transmit(uint8_t cd, uint8_t data_to_send)
         digitalWrite(SPI_MOSI, HIGH);
     else
         digitalWrite(SPI_MOSI, LOW);
-    deepSleep_us(delay_SPI_clock_pulse * 2 + 1);
+    pm_wait_us(delay_SPI_clock_pulse * 2 + 1);
     digitalWrite(SPI_CLOCK, HIGH);
-    deepSleep_us(delay_SPI_clock_pulse);
+    pm_wait_us(delay_SPI_clock_pulse);
 
     // send 8 bytes
     for (int i = 0; i < 8; i++)
@@ -460,17 +460,17 @@ void transmit(uint8_t cd, uint8_t data_to_send)
             digitalWrite(SPI_MOSI, LOW);
         // prepare for the next bit
         data_to_send = (data_to_send << 1);
-        deepSleep_us(delay_SPI_clock_pulse * 2 + 1);
+        pm_wait_us(delay_SPI_clock_pulse * 2 + 1);
         // the data is read at rising clock (halfway the time MOSI is set)
         digitalWrite(SPI_CLOCK, HIGH);
-        deepSleep_us(delay_SPI_clock_pulse);
+        pm_wait_us(delay_SPI_clock_pulse);
     }
 
     // finish by ending the clock cycle and disabling SPI
     digitalWrite(SPI_CLOCK, LOW);
-    deepSleep_us(delay_SPI_end_cycle);
+    pm_wait_us(delay_SPI_end_cycle);
     digitalWrite(SPI_ENABLE, HIGH);
-    deepSleep_us(delay_SPI_end_cycle);
+    pm_wait_us(delay_SPI_end_cycle);
 }
 
 void epd_write_display(XiaomiMiaoMiaoCeBT* c)
