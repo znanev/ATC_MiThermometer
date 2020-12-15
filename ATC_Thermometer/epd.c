@@ -80,7 +80,9 @@ int digits[16][11] = {
     {1, 6, 7, 8, 9, 10, 11, 0, 0, 0, 0}  // F
 };
 
-// TODO: Provide some function stubs
+// Wrap some Telink GPIO-related functions into Arduino-like functions,
+// in order to keep the code close to the original at:
+// https://github.com/znanev/MHO-C401
 void pinMode(uint16_t pin, uint8_t mode)
 {
     gpio_set_func(pin, AS_GPIO);    //enable GPIO func
@@ -116,7 +118,10 @@ _attribute_ram_code_ void pm_wait_us(uint16_t microseconds)
     cpu_stall_wakeup_by_timer0(microseconds * CLOCK_SYS_CLOCK_1US);
 }
 
-// Replace lcd functions
+//----------------------------------
+// replace functions from LCD driver (ATC's codebase)
+// with EPD-specific implementation
+//----------------------------------
 void show_atc_mac(XiaomiMiaoMiaoCeBT* c)
 {
 	extern u8 mac_public[6];
@@ -255,10 +260,10 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
         // start an initialisation sequence (black - all 0xFF)
         send_sequence(c, T_LUTV_init, T_LUT_KK_init, T_LUT_KW_init, T_DTM_init, 1);
 
-        // Original firmware pauses here for about 1500 ms
-        // in addition to display refresh busy signal
+        // Original firmware pauses here for about 2000 ms
+        // in addition to display refresh BUSY_N signal (only on start-up)
         // Might be necessary in order to fully energise the black particles,
-        // but even without this sleep_ms the display seems to be working fine
+        // or it might be linked to BLE/hardware initialisation.
         pm_wait_ms(2000);
 
         // pulse RST_N low for 110 microseconds
@@ -275,32 +280,13 @@ void epd_init(XiaomiMiaoMiaoCeBT* c, uint8_t redraw)
         pm_wait_us(110);
         digitalWrite(IO_RST_N, HIGH);
         pm_wait_us(145);
-
-        // Original firmware pauses here for about 100 ms
-        // in addition to display refresh busy signal.
-        // Might be dedicated to sensor data aquisition
-        // sleep_ms(100);
     }
-    else
-    {
-        // Remove all black segments
-//        send_sequence(c, T_LUTV_init, T_LUT_KW_update, T_LUT_KK_update, T_DTM2_init, 1);
-    }
-    
 }
 
 void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
                                      uint8_t *dataKW, uint8_t *data,
                                      uint8_t is_init)
 {
-/*    if(is_init || c->transition)
-    {
-        // pulse RST_N low for 110 microseconds
-        digitalWrite(IO_RST_N, LOW);
-        sleep_us(110);
-        digitalWrite(IO_RST_N, HIGH);
-    }
-*/
     // send Charge Pump ON command
     transmit(0, POWER_ON);
 
@@ -308,10 +294,6 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     // commands/data: when ready, the display sets IO_BUSY_N to 1
     while (digitalRead(IO_BUSY_N) == 0)
         pm_wait_ms(1);
-
-    // Original firmware pauses here for about 100ms - this time is not required by the display,
-    // but is probably dedicated to sensor data aquisition (temperature, humidity and battery).
-    //sleep_ms(100);
 
     transmit(0, PANEL_SETTING);
     transmit(1, 0x0B);
@@ -339,9 +321,7 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     }
 
     // NOTE: Original firmware makes partial refresh on update, but not when initialising the screen.
-    // Switching the background segment on/off requires full refresh, hence do not send partial refresh
-    // command when switching between inverted / non-inverted screen mode.
-    if ( !is_init && !c->transition )
+    if ( !is_init )
     {
         transmit(0, PARTIAL_DISPLAY_REFRESH);
         transmit(1, 0x00);
@@ -390,25 +370,13 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
 
     // Original firmware sends DATA_START_TRANSMISSION_2 command only
     // when performing full refresh
-    if (is_init && !c->transition)
+    if (is_init)
     {
         transmit(0, DATA_START_TRANSMISSION_2);
         for(int i = 0; i < 18; i++)
             transmit(1, data[i]);
     }
     
-    if (c->transition)
-    {
-        // NOTE: Original firmware doesn't perform this, but I found through experiments
-        // that this is the way to clear the black background segment, without a full re-initialisation
-        // (also partial refresh should not be sent in this case).
-        {
-            transmit(0, DATA_START_TRANSMISSION_2);
-            for(int i = 0; i < 18; i++)
-                transmit(1, ~data[i]);
-        }
-    }
-
     transmit(0, DISPLAY_REFRESH);
 
     // wait for the display to become ready to receive new
@@ -674,49 +642,18 @@ void epd_unset_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where)
 void epd_set_segment(XiaomiMiaoMiaoCeBT* c, uint8_t segment_byte, uint8_t segment_bit,
                                    uint8_t value)
 {
-    // depending on whether the display is inverted and the desired value
-    // the bit needs to be set or cleared
-    if (((c->inverted == 0) && (value == 1)) ||
-        ((c->inverted == 1) && (value == 0)))
+    if (value == 1)
         // set the bit
         c->display_data[segment_byte] |= (1 << segment_bit);
     else
-        // remove the bit
+        // clear the bit
         c->display_data[segment_byte] &= ~(1 << segment_bit);
 }
 
 void epd_start_new_screen(XiaomiMiaoMiaoCeBT* c)
 {
-    epd_start_new_screen_inverted(c, 0);
-}
-
-void epd_start_new_screen_inverted(XiaomiMiaoMiaoCeBT* c, uint8_t _inverted)
-{
-    // Set transition flag, indicating if the background
-    // segment needs to be set or cleared
-    if (_inverted != c->inverted)
-        c->transition = 1;
-    else
-        c->transition = 0;
-
-     if (_inverted == 1)
-        c->inverted = 1;
-    else
-        c->inverted = 0;
-
-    // prepare the data to be displayed, assume all segments are either on or off
-    if (_inverted)
-    {
-        for (int i = 0; i < 18; i++)
-            c->display_data[i] = 0xFF;
-
-        // set the bit to switch the background to black,
-        // use value=0 because of inversion
-        epd_set_segment(c, 17, 7, 0);
-    }
-    else
-    {
-        for (int i = 0; i < 18; i++)
-           c->display_data[i] = 0x00;
-    }
+    // prepare the data to be displayed, assume all segments
+    // are initially off
+    for (int i = 0; i < 18; i++)
+        c->display_data[i] = 0x00;
 }

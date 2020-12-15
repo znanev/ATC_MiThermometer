@@ -5,7 +5,6 @@
 //----------------------------------
 // define some constants
 //----------------------------------
-
 #define LOW     0
 #define HIGH    1
 #define OUTPUT  0
@@ -65,14 +64,14 @@
 #define ATC 19
 
 typedef struct XiaomiMiaoMiaoCeBT {
-    // boolean to indicate if the screen is inverted or not
-    uint8_t inverted;
-    uint8_t transition;
     // The array in which the segments to be displayed are placed
     uint8_t display_data[18];    
 } XiaomiMiaoMiaoCeBT;
 
-// TODO - cleanup - function prototypes from lcd
+//----------------------------------
+// define function prototypes from LCD driver (ATC's codebase)
+// (replaced with EPD driver functionality here)
+//----------------------------------
 void show_atc_mac(XiaomiMiaoMiaoCeBT* c);
 void show_temp_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t symbol);
 void show_big_number(XiaomiMiaoMiaoCeBT* c, int16_t number);
@@ -80,9 +79,6 @@ void show_small_number(XiaomiMiaoMiaoCeBT* c, uint16_t number);
 void show_battery_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t state);
 void show_ble_symbol(XiaomiMiaoMiaoCeBT* c, uint8_t state);
 void show_smiley(XiaomiMiaoMiaoCeBT* c, uint8_t state);
-// TODO ^^----
-void epd_unset_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where);
-
 
 /**
  * Initialize the display
@@ -119,16 +115,27 @@ void epd_set_digit(XiaomiMiaoMiaoCeBT* i, uint8_t digit, uint8_t where);
  * @param where     Which shapes should be turned on, there are several 
  *                  pre-defined shapes: [TOP_LEFT_1, BACKGROUND, 
  *                  BATTERY_LOW, DASHES, FACE, FACE_SMILE, FACE_FROWN, 
- *                  FACE_NEUTRAL, SUN, FIXED]
+ *                  FACE_NEUTRAL, SUN, FIXED, etc.]
  *                  But if you want you can define your own, see the 
  *                  #defines above and the variables in XiaomiMiaoMiaoCe.cpp
  */
 void epd_set_shape(XiaomiMiaoMiaoCeBT* i, uint8_t where);
 
+/** 
+ * Remove a defined shape from screen
+ * @param where     Which shapes should be turned on, there are several 
+ *                  pre-defined shapes: [TOP_LEFT_1, BACKGROUND, 
+ *                  BATTERY_LOW, DASHES, FACE, FACE_SMILE, FACE_FROWN, 
+ *                  FACE_NEUTRAL, SUN, FIXED, etc.]
+ *                  But if you want you can define your own, see the 
+ *                  #defines above and the variables in XiaomiMiaoMiaoCe.cpp
+ */
+void epd_unset_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where);
+
 /**
  * Set a segment to a value
- * The e-ink display has 73 segments (the driver can handle 120) which are
- * distributed over 15 bytes with 8 bits each: 15*8 = 120
+ * The e-ink display has 73 segments (the driver can handle 144) which are
+ * distributed over 18 bytes with 8 bits each: 18*8 = 144
  * @param segment_byte  The byte in which the segments is located
  * @param segment_bit   The bit in the byte
  * @param value         0 = off, 1 = on
@@ -137,10 +144,8 @@ void epd_set_segment(XiaomiMiaoMiaoCeBT* i, uint8_t segment_byte, uint8_t segmen
 
 /** 
  * Start building a new display
- * @param inverted  0 = inverted display, 1 = normal
 */
 void epd_start_new_screen(XiaomiMiaoMiaoCeBT* i);
-void epd_start_new_screen_inverted(XiaomiMiaoMiaoCeBT* i, uint8_t inverted);
 
 /**
  * Transmit data to the display via SPI
