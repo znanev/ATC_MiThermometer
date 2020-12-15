@@ -388,9 +388,6 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
     for (int i = 0; i < 18; i++)
         transmit(1, data[i]);
 
-    while (digitalRead(IO_BUSY_N) == 0)
-        pm_wait_ms(1);
-
     // Original firmware sends DATA_START_TRANSMISSION_2 command only
     // when performing full refresh
     if (is_init && !c->transition)
@@ -398,9 +395,6 @@ void send_sequence(XiaomiMiaoMiaoCeBT* c, uint8_t *dataV, uint8_t *dataKK,
         transmit(0, DATA_START_TRANSMISSION_2);
         for(int i = 0; i < 18; i++)
             transmit(1, data[i]);
-
-        while (digitalRead(IO_BUSY_N) == 0)
-            pm_wait_ms(1);
     }
     
     if (c->transition)
