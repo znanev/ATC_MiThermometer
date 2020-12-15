@@ -491,12 +491,13 @@ void epd_set_digit(XiaomiMiaoMiaoCeBT* c, uint8_t digit, uint8_t where)
     }
 }
 
-void epd_set_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where)
+void epd_set_or_clear_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where, uint8_t set_or_clear)
 {
     int num_of_segments = 0;
     uint8_t *segments;
 
-    // set the number of segments and which segments has to be displayed
+    // set the number of segments and which segments have
+    // to be displayed or removed
     switch (where)
     {
         case TOP_LEFT_1:
@@ -555,88 +556,25 @@ void epd_set_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where)
             return;
     }
 
-    // set the segments
+    // set or remove the segments, depending on flag set_or_clear
+    // set_or_clear = 1 --> set segments
+    // set_or_clear = 0 --> clear segments
     for (uint8_t segment = 0; segment < num_of_segments; segment++)
     {
         uint8_t segment_byte = segments[2 * segment];
         uint8_t segment_bit = segments[1 + 2 * segment];
-        epd_set_segment(c, segment_byte, segment_bit, 1);
+        epd_set_segment(c, segment_byte, segment_bit, set_or_clear);
     }
 }
 
-// TODO: Refactor this - combine with function above (introduct flag,
-// indicating if segment should be set or cleared.
+void epd_set_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where)
+{
+    epd_set_or_clear_shape(c, where, 1);
+}
+
 void epd_unset_shape(XiaomiMiaoMiaoCeBT* c, uint8_t where)
 {
-    int num_of_segments = 0;
-    uint8_t *segments;
-
-    // set the number of segments and which segments has to be displayed
-    switch (where)
-    {
-        case TOP_LEFT_1:
-            num_of_segments = sizeof(top_left_1) / 2;
-            segments = top_left_1;
-            break;
-        case BATTERY_LOW:
-            num_of_segments = sizeof(battery_low) / 2;
-            segments = battery_low;
-            break;
-        case DASHES:
-            num_of_segments = sizeof(dashes) / 2;
-            segments = dashes;
-            break;
-        case FACE:
-            num_of_segments = sizeof(face) / 2;
-            segments = face;
-            break;
-        case FACE_SMILE:
-            num_of_segments = sizeof(face_smile) / 2;
-            segments = face_smile;
-            break;
-        case FACE_FROWN:
-            num_of_segments = sizeof(face_frown) / 2;
-            segments = face_frown;
-            break;
-        case FACE_NEUTRAL:
-            num_of_segments = sizeof(face_neutral) / 2;
-            segments = face_neutral;
-            break;
-        case SUN:
-            num_of_segments = sizeof(sun) / 2;
-            segments = sun;
-            break;
-        case FIXED:
-            num_of_segments = sizeof(fixed) / 2;
-            segments = fixed;
-            break;
-        case FIXED_DEG_C:
-            num_of_segments = sizeof(fixed_deg_C) / 2;
-            segments = fixed_deg_C;
-            break;
-        case FIXED_DEG_F:
-            num_of_segments = sizeof(fixed_deg_F) / 2;
-            segments = fixed_deg_F;
-            break;
-        case MINUS:
-            num_of_segments = sizeof(minus) / 2;
-            segments = minus;
-            break;
-        case ATC:
-            num_of_segments = sizeof(Atc) / 2;
-            segments = Atc;
-            break;
-        default:
-            return;
-    }
-
-    // set the segments
-    for (uint8_t segment = 0; segment < num_of_segments; segment++)
-    {
-        uint8_t segment_byte = segments[2 * segment];
-        uint8_t segment_bit = segments[1 + 2 * segment];
-        epd_set_segment(c, segment_byte, segment_bit, 0);
-    }
+    epd_set_or_clear_shape(c, where, 0);
 }
 
 void epd_set_segment(XiaomiMiaoMiaoCeBT* c, uint8_t segment_byte, uint8_t segment_bit,
